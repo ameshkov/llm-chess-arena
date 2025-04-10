@@ -23,7 +23,7 @@ Common mistakes to AVOID:
 JSON:
 - ONLY WRITE JSON.
 - DO NOT WRITE ANYTHING BEFORE THE JSON OR AFTER THE JSON.
-- YOU ONLY OUTPUT VALID JSON CODE. 
+- YOU ONLY OUTPUT VALID JSON CODE.
 
 RESPONSE FORMAT REQUIREMENTS:
 - You MUST return ONLY a valid JSON object
@@ -43,7 +43,7 @@ class ChessModelProvider {
    async makeMove({ fen, history, legalMoves }) {
        throw new Error('Method must be implemented');
    }
-   
+
    validateResponse(moveData, legalMoves) {
        if (!moveData?.move || !legalMoves.includes(moveData.move)) {
            throw new Error(`Invalid move: ${moveData?.move}. Must be one of: ${legalMoves.join(', ')}`);
@@ -117,6 +117,11 @@ class OpenAIProvider extends ChessModelProvider {
        this.apiKey = apiKey;
        this.model = model;
        this.temperature = temperature;
+
+       let tempRange = ChessProviderFactory.getTempRange('openai', model);
+       if (!tempRange) {
+          this.temperature = null;
+       }
    }
 
    async makeMove({ fen, history, legalMoves }) {
@@ -133,7 +138,7 @@ class OpenAIProvider extends ChessModelProvider {
                        { role: "user", content: this.formatPrompt(fen, history, legalMoves) }
                    ],
                    model: this.model,
-                   temperature: parseFloat(this.temperature),
+                   temperature: this.temperature ? parseFloat(this.temperature) : undefined,
                    response_format: { type: "json_object" }
                })
            });
@@ -329,19 +334,19 @@ class ChessProviderFactory {
         console.log(" ChessProviderFactory.PROVIDERS getter called");
         console.log(" PROVIDERS_CONFIG type:", typeof PROVIDERS_CONFIG);
         console.log(" PROVIDER_CONFIG type:", typeof PROVIDER_CONFIG);
-        
+
         if (typeof PROVIDERS_CONFIG !== 'undefined') {
             console.log(" Using PROVIDERS_CONFIG");
             console.log(" Available providers:", Object.keys(PROVIDERS_CONFIG));
             return PROVIDERS_CONFIG;
         }
-        
+
         if (typeof PROVIDER_CONFIG !== 'undefined') {
             console.log(" Using PROVIDER_CONFIG");
             console.log(" Available providers:", Object.keys(PROVIDER_CONFIG));
             return PROVIDER_CONFIG;
         }
-        
+
         console.log(" No config found, returning empty object");
         return {};
     }
@@ -363,7 +368,7 @@ class ChessProviderFactory {
             console.log(` Provider not found: ${providerId}`);
             return [];
         }
-        
+
         const models = Object.keys(provider.models).map(key => ({
             id: key,
             name: provider.models[key].displayName
@@ -373,17 +378,14 @@ class ChessProviderFactory {
     }
 
     static getTempRange(providerId, modelId) {
-        console.log(` ChessProviderFactory.getTempRange called for provider: ${providerId}, model: ${modelId}`);
-        const range = this.PROVIDERS[providerId]?.models[modelId]?.tempRange || { min: 0.1, max: 1.0 };
-        console.log(` Temperature range:`, JSON.stringify(range, null, 2));
-        return range;
+        return this.PROVIDERS[providerId]?.models[modelId]?.tempRange;
     }
 
     static createProvider(providerId, modelId, apiKey, temperature) {
         console.log(` ChessProviderFactory.createProvider called`);
         console.log(` Provider: ${providerId}, Model: ${modelId}, Temperature: ${temperature}`);
         console.log(` API Key present: ${apiKey ? 'Yes' : 'No'}`);
-        
+
         switch(providerId) {
             case 'groq':
                 console.log(` Creating GroqProvider instance`);
@@ -466,7 +468,7 @@ class ChessGame {
        const apiKeyInput = document.getElementById(`apiKey${playerNum}`);
        const providerSelect = document.getElementById(`provider${playerNum}`);
        const providerId = providerSelect.value;
-       
+
        if (apiKeyInput.value && providerId) {
            localStorage.setItem(`${providerId}_api_key`, apiKeyInput.value);
            this.logDebug(`Saved API key for ${providerId}`);
@@ -477,7 +479,7 @@ class ChessGame {
    clearApiKey(playerNum) {
        const providerSelect = document.getElementById(`provider${playerNum}`);
        const providerId = providerSelect.value;
-       
+
        if (providerId) {
            localStorage.removeItem(`${providerId}_api_key`);
            document.getElementById(`apiKey${playerNum}`).value = '';
@@ -491,14 +493,14 @@ class ChessGame {
        const providerSelect = document.getElementById(`provider${playerNum}`);
        const providerId = providerSelect.value;
        const savedKey = providerId ? localStorage.getItem(`${providerId}_api_key`) : null;
-       
+
        const apiKeyInput = document.getElementById(`apiKey${playerNum}`);
        apiKeyInput.value = savedKey || '';
        this.updateApiKeyButtons(playerNum);
    }
 
    onDragStart(source, piece) {
-       const playerType = this.currentPlayer === 'white' ? 
+       const playerType = this.currentPlayer === 'white' ?
            document.getElementById('playerType1').value :
            document.getElementById('playerType2').value;
 
@@ -512,7 +514,7 @@ class ChessGame {
    }
 
    onMouseoverSquare(square) {
-       const playerType = this.currentPlayer === 'white' ? 
+       const playerType = this.currentPlayer === 'white' ?
            document.getElementById('playerType1').value :
            document.getElementById('playerType2').value;
 
@@ -543,7 +545,7 @@ class ChessGame {
    }
 
    onDrop(source, target) {
-       const playerType = this.currentPlayer === 'white' ? 
+       const playerType = this.currentPlayer === 'white' ?
            document.getElementById('playerType1').value :
            document.getElementById('playerType2').value;
 
@@ -571,7 +573,7 @@ class ChessGame {
            return;
        }
 
-       const nextPlayerType = this.currentPlayer === 'white' ? 
+       const nextPlayerType = this.currentPlayer === 'white' ?
            document.getElementById('playerType1').value :
            document.getElementById('playerType2').value;
 
@@ -584,7 +586,7 @@ class ChessGame {
        console.log(" ChessGame.populateProviderDropdowns called");
        const providers = ChessProviderFactory.getProviders();
        console.log(" Providers to populate:", JSON.stringify(providers, null, 2));
-       
+
        ['1', '2'].forEach(playerNum => {
            console.log(` Populating provider dropdown for player ${playerNum}`);
            const select = document.getElementById(`provider${playerNum}`);
@@ -593,60 +595,60 @@ class ChessGame {
                return;
            }
            console.log(` Found provider select element for player ${playerNum}`);
-           
+
            // Save current value if any
            const currentValue = select.value;
            console.log(` Current provider value: "${currentValue}"`);
-           
+
            // Create a new select element
            const newSelect = document.createElement('select');
            newSelect.id = `provider${playerNum}`;
            console.log(` Created new select element with id: ${newSelect.id}`);
-           
+
            // Populate the dropdown
            newSelect.innerHTML = '';
            newSelect.appendChild(new Option('Select Provider', ''));
            console.log(` Added default 'Select Provider' option`);
-           
+
            providers.forEach(provider => {
                console.log(` Adding provider option: ${provider.name} (${provider.id})`);
                newSelect.appendChild(new Option(provider.name, provider.id));
            });
-           
+
            // Restore previous value if possible
            if (currentValue) {
                console.log(` Attempting to restore previous value: ${currentValue}`);
                newSelect.value = currentValue;
                console.log(` New select value after restore: "${newSelect.value}"`);
            }
-           
+
            // Add the change event listener
            console.log(` Adding change event listener to provider dropdown`);
            newSelect.addEventListener('change', (e) => {
                const providerId = e.target.value;
                console.log(` Provider changed to: "${providerId}"`);
-               
+
                const modelGroup = document.getElementById(`modelGroup${playerNum}`);
                const apiKeyGroup = document.getElementById(`apiKeyGroup${playerNum}`);
-               
+
                // Show/hide model group based on provider selection
                modelGroup.style.display = providerId ? 'block' : 'none';
                console.log(` Model group display: ${modelGroup.style.display}`);
-               
+
                // Show/hide API key group based on provider selection
                apiKeyGroup.style.display = providerId ? 'block' : 'none';
                console.log(` API key group display: ${apiKeyGroup.style.display}`);
-               
+
                // Update model dropdown for selected provider
                if (providerId) {
                    console.log(` Updating model dropdown for provider: ${providerId}`);
                    this.populateModelDropdown(playerNum, providerId);
                    this.loadApiKeyForProvider(playerNum, providerId);
                }
-               
+
                this.saveSettings();
            });
-           
+
            // Replace the old element with the new one
            console.log(` Replacing old provider select with new one`);
            select.parentNode.replaceChild(newSelect, select);
@@ -654,37 +656,52 @@ class ChessGame {
        });
    }
 
+   updateTempRange(playerNum, providerId, modelId) {
+       const tempRange = ChessProviderFactory.getTempRange(providerId, modelId);
+       const tempInput = document.getElementById(`temp${playerNum}`);
+
+       if (tempRange) {
+           tempInput.min = tempRange.min;
+           tempInput.max = tempRange.max;
+           tempInput.value = (tempRange.min + tempRange.max) / 2;
+           tempInput.parentElement.style.display = '';
+           document.getElementById(`temp${playerNum}Value`).textContent = tempInput.value;
+       } else {
+           tempInput.parentElement.style.display = 'none';
+       }
+   }
+
    populateModelDropdown(playerNum, providerId) {
        console.log(`🔍 ChessGame.populateModelDropdown called for player ${playerNum}, provider ${providerId}`);
        const models = ChessProviderFactory.getModelsByProvider(providerId);
        console.log(`📋 Models to populate:`, JSON.stringify(models, null, 2));
-       
+
        const select = document.getElementById(`model${playerNum}`);
        if (!select) {
            console.error(`❌ Model select element not found for player ${playerNum}`);
            return;
        }
        console.log(`✅ Found model select element for player ${playerNum}`);
-       
+
        // Save current value if any
        const currentValue = select.value;
        console.log(`📊 Current model value: "${currentValue}"`);
-       
+
        // Create a new select element
        const newSelect = document.createElement('select');
        newSelect.id = `model${playerNum}`;
        console.log(`🔄 Created new select element with id: ${newSelect.id}`);
-       
+
        // Populate the dropdown
        newSelect.innerHTML = '';
        newSelect.appendChild(new Option('Select Model', ''));
        console.log(`🔄 Added default 'Select Model' option`);
-       
+
        models.forEach(model => {
            console.log(`🔄 Adding model option: ${model.name} (${model.id})`);
            newSelect.appendChild(new Option(model.name, model.id));
        });
-       
+
        // Restore previous value if possible and it still exists in new options
        if (currentValue) {
            console.log(`🔄 Attempting to restore previous value: ${currentValue}`);
@@ -695,7 +712,7 @@ class ChessGame {
                console.log(`📊 New select value after restore: "${newSelect.value}"`);
            }
        }
-       
+
        // Add change event listener
        console.log(`🔄 Adding change event listener to model dropdown`);
        newSelect.addEventListener('change', (e) => {
@@ -706,7 +723,7 @@ class ChessGame {
            }
            this.saveSettings();
        });
-       
+
        // Replace the old element with the new one
        console.log(`🔄 Replacing old model select with new one`);
        select.parentNode.replaceChild(newSelect, select);
@@ -715,7 +732,7 @@ class ChessGame {
 
    loadApiKeyForProvider(playerNum, providerId) {
        const savedKey = providerId ? localStorage.getItem(`${providerId}_api_key`) : null;
-       
+
        const apiKeyInput = document.getElementById(`apiKey${playerNum}`);
        apiKeyInput.value = savedKey || '';
        this.updateApiKeyButtons(playerNum);
@@ -725,7 +742,7 @@ class ChessGame {
         document.getElementById('startBtn').addEventListener('click', () => this.startNewGame());
         document.getElementById('stepBtn').addEventListener('click', () => this.makeMove());
         document.getElementById('copyPgn').addEventListener('click', () => this.copyPgnToClipboard());
-        
+
         // Button event listeners
         const setupButtonListener = (id, callback) => {
             const button = document.getElementById(id);
@@ -733,11 +750,11 @@ class ChessGame {
                 button.addEventListener('click', callback);
             }
         };
-        
+
         setupButtonListener('startBtn', () => this.startNewGame());
         setupButtonListener('stepBtn', () => this.makeMove());
         setupButtonListener('copyPgn', () => this.copyPgnToClipboard());
-        
+
         // Checkbox event listeners
         const setupCheckboxListener = (id, callback) => {
             const checkbox = document.getElementById(id);
@@ -745,13 +762,13 @@ class ChessGame {
                 checkbox.addEventListener('change', (e) => callback(e.target.checked));
             }
         };
-        
+
         setupCheckboxListener('autoPlay', (checked) => this.toggleAutoPlay(checked));
         setupCheckboxListener('debugMode', (checked) => {
             this.debugMode = checked;
             this.logDebug('Debug mode ' + (this.debugMode ? 'enabled' : 'disabled'));
         });
-        
+
         // Temperature sliders
         ['temp1', 'temp2'].forEach(id => {
             const slider = document.getElementById(id);
@@ -761,7 +778,7 @@ class ChessGame {
                 });
             }
         });
-        
+
         // API key handling
         ['1', '2'].forEach(playerNum => {
             const apiKeyInput = document.getElementById(`apiKey${playerNum}`);
@@ -770,7 +787,7 @@ class ChessGame {
                     this.updateApiKeyButtons(playerNum);
                 });
             }
-            
+
             setupButtonListener(`saveApiKey${playerNum}`, () => this.saveApiKey(playerNum));
             setupButtonListener(`clearApiKey${playerNum}`, () => this.clearApiKey(playerNum));
         });
@@ -779,29 +796,29 @@ class ChessGame {
    setupPlayerTypeChangeHandlers() {
        ['1', '2'].forEach(playerNum => {
            const select = document.getElementById(`playerType${playerNum}`);
-            
+
            // Create a new select element and copy all options
            const newSelect = select.cloneNode(true); // Use deep clone to include all child elements
            select.parentNode.replaceChild(newSelect, select);
            newSelect.value = select.value; // Preserve the current value
-            
+
            // Add new event listener
            newSelect.addEventListener('change', () => {
                const isAI = newSelect.value === 'ai';
                const aiSettings = document.getElementById(`aiSettings${playerNum}`);
                aiSettings.style.display = isAI ? 'block' : 'none';
-                
+
                if (isAI) {
                    // Make sure provider dropdown is visible
                    console.log(`Player ${playerNum} changed to AI, showing provider dropdown`);
-                   
+
                    // Reset provider dropdown if needed
                    const providerSelect = document.getElementById(`provider${playerNum}`);
                    if (!providerSelect.value) {
                        this.populateProviderDropdowns();
                    }
                }
-                
+
                this.saveSettings();
                this.updatePlayerControls();
            });
@@ -828,7 +845,7 @@ class ChessGame {
                this.updateTempRange(playerNum, providerId, modelId);
            }
        });
-        
+
        this.updatePlayerControls();
    }
 
@@ -865,7 +882,7 @@ class ChessGame {
            const playerType = document.getElementById(`playerType${player}`).value;
            const aiSettings = document.getElementById(`aiSettings${player}`);
            aiSettings.style.display = playerType === 'ai' ? 'block' : 'none';
-            
+
            // If playerType is 'ai', show model group only if provider is selected
            if (playerType === 'ai') {
                const providerId = document.getElementById(`provider${player}`).value;
@@ -925,7 +942,7 @@ class ChessGame {
                return false;
            }
 
-           const nextPlayerType = this.currentPlayer === 'white' ? 
+           const nextPlayerType = this.currentPlayer === 'white' ?
                document.getElementById('playerType1').value :
                document.getElementById('playerType2').value;
 
@@ -953,8 +970,8 @@ class ChessGame {
                    document.getElementById('autoPlay').checked = false;
                    return;
                }
-               
-               const playerType = this.currentPlayer === 'white' ? 
+
+               const playerType = this.currentPlayer === 'white' ?
                    document.getElementById('playerType1').value :
                    document.getElementById('playerType2').value;
 
@@ -1006,7 +1023,7 @@ class ChessGame {
        } else if (this.game.in_stalemate()) {
            result = "Game ended in stalemate!";
        }
-       
+
        this.logMessage(result);
        this.logDebug(`Game over: ${result}`);
        this.updateStatus();
@@ -1029,12 +1046,12 @@ class ChessGame {
        const reasoningLog = document.getElementById('reasoningLog');
        const entry = document.createElement('div');
        entry.className = `move-entry ${this.currentPlayer}`;
-       
+
        const playerNum = this.currentPlayer === 'white' ? '1' : '2';
        const playerType = document.getElementById(`playerType${playerNum}`).value;
        const providerId = document.getElementById(`provider${playerNum}`).value;
-       const modelName = playerType === 'ai' ? 
-           ` (${document.getElementById(`model${playerNum}`).value})` : 
+       const modelName = playerType === 'ai' ?
+           ` (${document.getElementById(`model${playerNum}`).value})` :
            ' (Human)';
 
        entry.innerHTML = `

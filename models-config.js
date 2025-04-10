@@ -43,16 +43,13 @@ const PROVIDER_CONFIG = {
                 tempRange: { min: 0.1, max: 1.0 }
             },
             'o1': {
-                displayName: 'o1',
-                tempRange: { min: 0.1, max: 1.0 }
+                displayName: 'o1'
             },
             'o1-mini': {
-                displayName: 'o1-mini',
-                tempRange: { min: 0.1, max: 1.0 }
+                displayName: 'o1-mini'
             },
             'o3-mini': {
-                displayName: 'o3-mini',
-                tempRange: { min: 0.1, max: 1.0 }
+                displayName: 'o3-mini'
             },
             'gpt-3.5-turbo': {
                 displayName: 'GPT-3.5 Turbo',
