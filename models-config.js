@@ -1,6 +1,6 @@
 /**
  * Models Configuration File
- * 
+ *
  * This file contains all the model configurations for the LLM Chess Arena.
  * You can easily add or modify models by editing this file.
  */
@@ -40,6 +40,18 @@ const PROVIDER_CONFIG = {
             },
             'gpt-4o': {
                 displayName: 'GPT-4o',
+                tempRange: { min: 0.1, max: 1.0 }
+            },
+            'o1': {
+                displayName: 'o1',
+                tempRange: { min: 0.1, max: 1.0 }
+            },
+            'o1-mini': {
+                displayName: 'o1-mini',
+                tempRange: { min: 0.1, max: 1.0 }
+            },
+            'o3-mini': {
+                displayName: 'o3-mini',
                 tempRange: { min: 0.1, max: 1.0 }
             },
             'gpt-3.5-turbo': {
@@ -126,10 +138,10 @@ if (typeof module !== 'undefined') {
 if (typeof window !== 'undefined') {
     console.log("🔍 Setting up global config in browser environment");
     console.log("📋 PROVIDER_CONFIG:", JSON.stringify(Object.keys(PROVIDER_CONFIG), null, 2));
-    
+
     window.PROVIDERS_CONFIG = PROVIDER_CONFIG;
     console.log("✅ Assigned to window.PROVIDERS_CONFIG");
-    
+
     // Also provide as PROVIDER_CONFIG for potential compatibility
     window.PROVIDER_CONFIG = PROVIDER_CONFIG;
     console.log("✅ Assigned to window.PROVIDER_CONFIG");
