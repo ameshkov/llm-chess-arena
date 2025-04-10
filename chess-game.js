@@ -965,6 +965,10 @@ class ChessGame {
        if (enabled && !this.game.game_over()) {
            const delay = parseInt(document.getElementById('moveDelay').value);
            this.autoPlayInterval = setInterval(async () => {
+               if (this.isProcessingMove) {
+                   return;
+               }
+
                if (this.game.game_over() || !document.getElementById('autoPlay').checked) {
                    this.toggleAutoPlay(false);
                    document.getElementById('autoPlay').checked = false;
