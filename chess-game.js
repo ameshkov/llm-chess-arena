@@ -834,6 +834,9 @@ class ChessGame {
                if (key.startsWith('temp')) {
                    document.getElementById(key + 'Value').textContent = settings[key];
                }
+               if (key.startsWith('provider')) {
+                   this.populateModelDropdown(key.replace('provider', ''), element.value);
+               }
            }
        });
 
