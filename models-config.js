@@ -42,6 +42,10 @@ const PROVIDER_CONFIG = {
                 displayName: 'GPT-4o',
                 tempRange: { min: 0.1, max: 1.0 }
             },
+            'gpt-4.1': {
+                displayName: 'GPT-4.1',
+                tempRange: { min: 0.1, max: 1.0 }
+            },
             'o1': {
                 displayName: 'o1'
             },
